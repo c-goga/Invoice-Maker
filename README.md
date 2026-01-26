@@ -10,7 +10,6 @@ Invoice maker for businesses, specifically my parent's business.
   * TO field (company being sent to)
   * Address
   * Unit Price
-* Lego on invoice
 * To: field
 * From: field
 * All invoices of company within a folder
