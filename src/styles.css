@@ -96,6 +96,17 @@ textarea {
     background-color: #7e9582;
 }
 
+#delete-company-button {
+    border-color: #503030;
+    color: #503030;
+    background-color: #ffd6d6;
+    font-weight: bold;
+}
+
+#delete-company-button:active {
+    background-color: #957e7e;
+}
+
 .selected {
     background-color: #fae9bc;
 }

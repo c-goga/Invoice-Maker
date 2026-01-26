@@ -1,21 +1,33 @@
 {
-  "name": "hurt-judge-fear-wrz01",
-  "productName": "hurt-judge-fear-wrz01",
+  "name": "Invoice-Maker",
+  "productName": "Invoice-Maker",
   "description": "My Electron application description",
   "keywords": [],
   "main": "./main.js",
   "version": "1.0.0",
   "author": "102ba",
   "scripts": {
-    "start": "electron ."
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
+    "@electron-forge/plugin-fuses": "^7.11.1",
+    "@electron/fuses": "^1.8.0",
     "bootstrap": "^5.3.8",
     "electron": "^39.2.7",
     "reloader": "^1.0.2",
     "sqlite3": "^5.1.7"
   },
   "dependencies": {
-    "docx": "^9.5.1"
+    "docx": "^9.5.1",
+    "electron-rebuild": "^3.2.9",
+    "electron-squirrel-startup": "^1.0.1"
   }
 }

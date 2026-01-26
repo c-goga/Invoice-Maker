@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('api',
     showSaveBeforeChangeBox: () => ipcRenderer.invoke('show-save-before-change'),
     showSaveBeforeExitBox: () => ipcRenderer.invoke('show-save-before-exit'),
     closeWindow: () => ipcRenderer.invoke('close-window'),
+    deleteCompany: (data) => ipcRenderer.invoke('delete-company', data),
   }
 )
 

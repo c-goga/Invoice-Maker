@@ -155,7 +155,7 @@ function updateCompanySidebar(editInfo, user) {
                     initialsInput();
                     const editCompanyForm = document.getElementById('edit-company-form');
                     console.log('ccp after', currentCompanyProfile);
-                    editCompanyForm.addEventListener('submit', e => {
+                    editCompanyForm.addEventListener('submit', async e => {
                         e.preventDefault();
                         const buttonId = e.submitter.id;
                         if (buttonId == 'save') {
@@ -204,6 +204,11 @@ function updateCompanySidebar(editInfo, user) {
                                     document.getElementById('invoice-number').value = parseInt(document.getElementById('invoice-number').value) + 1;
                                 }).catch();
                             console.log('file creation res', response);
+                        } else if (buttonId == 'delete-company-button') {
+                            const response = window.api.deleteCompany(company.id).then(res => {
+                                location.reload();
+                            });
+                            console.log("Delete response:", response);
                         }
                     })
                 }
@@ -277,7 +282,7 @@ function updateCompanySidebar(editInfo, user) {
 
 if (window.location.href.split('/').pop() != 'edit-profile.html') {
     window.api.getCurrentCompany().then(user => {
-        console.log(user);
+        console.log('user', user);
 
         // Handles creating a new company
         const editInfo = document.getElementById('edit-info');
@@ -400,8 +405,9 @@ if (window.location.href.split('/').pop() != 'edit-profile.html') {
         setUpInput(document.getElementById('state-initials'), null, "Please input company state initials.")
         setUpInput(document.getElementById('company-zip-code'), null, "Please input company zip code.")
         setUpInput(document.getElementById('company-phone-number'), null, "Please input company phone number.")
-        setUpInput(document.getElementById('company-email'), null, "Please input company email.")
-        currentCompanyForm.addEventListener('submit', e => {
+        setUpInput(document.getElementById('company-email'), null, "Please input company email.");
+        intInput();
+        currentCompanyForm.addEventListener('submit', async e => {
             e.preventDefault();
             const fullName = document.getElementById('full-name').value;
             const companyName = document.getElementById('company-name').value;
@@ -414,14 +420,13 @@ if (window.location.href.split('/').pop() != 'edit-profile.html') {
             if (fullName == "" || companyName == "" || address == "" || city == "" || stateInitials == "" || zipCode == "" || phoneNumber == "" || email == "") {
                 console.log('no create company');
             } else {
-                const response = window.api.createInitialCompany({fullName, companyName, address, city, zipCode, stateInitials, phoneNumber, email});
+                const response = await window.api.createInitialCompany({fullName, companyName, address, city, zipCode, stateInitials, phoneNumber, email});
                 console.log('res:', response);
                 window.location.href = 'index.html';
             }
         })
     });
 }
-// window.location.href = 'edit-profile.html';
 
 // makes it so its only int input
 function intInput() {
@@ -477,10 +482,6 @@ function initialsInput(fileButton = "") {
             if (keyIsLetter && keyPressed.length == 1 && initialsInput.value.length < 4) {
                 e.preventDefault();
                 initialsInput.value += keyPressed.toUpperCase();
-                if (fileButton != "") {
-                    fileButton.disabled = true;
-                    addWarningBeforeFileCreation();
-                }
             }
         }
     });

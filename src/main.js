@@ -8,12 +8,24 @@ const docx = require("docx");
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const path = require('node:path')
-const sqlite3 = require('sqlite3').verbose();
+// const sqlite3 = require('sqlite3').verbose();
+const sqlite = require('node:sqlite');
+const {DatabaseSync} = require('node:sqlite');
+
+const isDevelopment = !app.isPackaged; // checks if app is packaged or not
 
 // const appPath = app.getPath('userData');
 const dbPath = path.join(__dirname, 'invoice_companies.db');
+const seedPath = isDevelopment ? path.join(__dirname, 'invoice_companies_seed.db') // dev
+                  : path.join(process.resourcesPath, 'invoice_companies_seed.db');  // not dev
+                  // .resourcesPath gives path to the resources folder in the packaged electron app
+// const dbPath = path.join(app.getPath('userData'), 'invoice_companies.db');
 console.log('dbPath:', dbPath);
-const db = new sqlite3.Database(dbPath);
+if (!fs.existsSync(dbPath)) {
+  fs.copyFileSync(seedPath, dbPath);
+}
+// const db = new sqlite.Database(dbPath);
+const db = new DatabaseSync(dbPath);
 console.log('db', db);
 
 let mainWindow;
@@ -58,20 +70,34 @@ app.on('window-all-closed', function () {
 
 ipcMain.handle('get-current-company', async (event) => {
   return new Promise((resolve, reject) => {
-    db.get('SELECT * FROM companies WHERE id=1', (err, user) => {
-      if (err) {
-        console.log('err', err);
-        reject(err.message);
-      }
+    try {
+      const get = db.prepare('SELECT * FROM companies WHERE id=1');
+      const user = get.get();
+      if (!user) {
+        throw new Error("No user found.");
+      }      
+      resolve(user);
+    } catch(err) {
+      reject(err);
+    }
+  })
+
+
+  // return new Promise((resolve, reject) => {
+  //   db.prepare('SELECT * FROM companies WHERE id=1', (err, user) => {
+  //     if (err) {
+  //       console.log('err', err);
+  //       reject(err.message);
+  //     }
       
-      if (user) {
-        resolve(user);
-        console.log('user', user);
-      } else {
-        reject('No user found.');
-      }
-    });
-  });
+  //     if (user) {
+  //       resolve(user);
+  //       console.log('user', user);
+  //     } else {
+  //       reject('No user found.');
+  //     }
+  //   });
+  // });
 })
 
 // handles creating a new company
@@ -79,49 +105,74 @@ ipcMain.handle('create-company', async (event, data) => {
   return new Promise((resolve, reject)  => {
     const {name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode } = data;
     const insert = db.prepare('INSERT INTO companies (name, invoice_initials, invoice_number, address, city, state_initials, zip_code) VALUES (?,?,?,?,?,?,?)');
-    insert.run(name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode, function(err) {
-      if (err) {
-        reject(err.message);
-      } else {
-        resolve({ id: this.lastId, message: 'Data posted successfully' });
-        insert.finalize(); // use when completely done with statement
-      }
-    });
+    try {
+      insert.run(name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode);
+      resolve({ id: this.lastId, message: 'Data posted successfully' });
+    } catch {
+      reject('Error creating company.');
+    }
+
+    // insert.run(name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode, function(err) {
+    //   if (err) {
+    //     reject(err.message);
+    //   } else {
+    //     resolve({ id: this.lastId, message: 'Data posted successfully' });
+    //     insert.finalize(); // use when completely done with statement
+    //   }
+    // });
   });
 });
 
 // handles creating the initial company profile
-ipcMain.handle('create-initial-company', async (event, data) => {
-  return new Promise((resolve, reject)  => {
+ipcMain.handle('create-initial-company', (event, data) => {
+  return new Promise(async (resolve, reject)  => {
     const {fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email } = data;
-    const insert = db.prepare('INSERT INTO companies (full_name, name, address, city, state_initials, zip_code, phone_number, email) VALUES (?,?,?,?,?,?,?)');
-    insert.run(fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email, function(err) {
-      if (err) {
-        reject(err.message);
-      } else {
-        resolve({ id: this.lastId, message: 'Data posted successfully' });
-        insert.finalize(); // use when completely done with statement
-      }
-    });
+    const insert = db.prepare('INSERT INTO companies (full_name, name, address, city, state_initials, zip_code, phone_number, email) VALUES (?,?,?,?,?,?,?,?)');
+    try {
+      insert.run(fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email);
+
+      const get = db.prepare('SELECT * FROM companies WHERE id = 1');
+      const company = get.get(); // did this so that it wouldn't immediately say no company found, returning the company ensures it is already in the db
+      resolve({ company });
+    } catch {
+      reject("Error creating initial company.");
+    }
+
+    // insert.run(fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email, function(err) {
+    //   if (err) {
+    //     reject(err.message);
+    //   } else {
+    //     resolve({ id: this.lastId, message: 'Data posted successfully' });
+    //     insert.finalize(); // use when completely done with statement
+    //   }
+    // });
   });
 });
 
 // handles getting all of the companies
 ipcMain.handle('get-companies', async (event) => {
   return new Promise((resolve, reject) => {
-    db.all('SELECT * FROM companies WHERE id>1 ORDER BY name DESC', (err, companies) => {
-      if (err) {
-        console.log('err', err);
-        reject(err.message);
-      }
+    try {
+      const get = db.prepare('SELECT * FROM companies WHERE id>1 ORDER BY name DESC');
+      companies = get.all();
+      resolve(companies);
+      console.log('Companies:', companies);
+    } catch {
+      reject('No companies found.');
+    }
+    // db.all('SELECT * FROM companies WHERE id>1 ORDER BY name DESC', (err, companies) => {
+    //   if (err) {
+    //     console.log('err', err);
+    //     reject(err.message);
+    //   }
 
-      if (companies) {
-        resolve(companies);
-        console.log('companies', companies);
-      } else {
-        reject('No companies found.');
-      }
-    });
+    //   if (companies) {
+    //     resolve(companies);
+    //     console.log('companies', companies);
+    //   } else {
+    //     reject('No companies found.');
+    //   }
+    // });
   });
 });
 
@@ -130,15 +181,21 @@ ipcMain.handle('update-company', async (event, data) => {
   return new Promise((resolve, reject) => {
     const {name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode, quantity, unitPrice, description, id } = data;
     const update = db.prepare('UPDATE companies SET name=?, invoice_initials=?, invoice_number=?,address=?,city=?,state_initials=?,zip_code=?,quantity=?,unit_price=?, description=? WHERE id=?');
-    update.run(name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode, quantity, unitPrice, description, id, function(err) {
-      if (err) {
-        console.log('err', err);
-        reject(err.message);
-      } else {
-        resolve({ id: this.lastId, message: 'Data updated successfully' });
-        update.finalize();
-      }
-    });
+    try {
+      update.run(name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode, quantity, unitPrice, description, id);
+      resolve({ id: this.lastId, message: 'Data updated successfully' });
+    } catch {
+      reject("Error updating company");
+    }
+    // update.run(name, invoiceInitials, invoiceNumber, address, city, stateInitials, zipCode, quantity, unitPrice, description, id, function(err) {
+    //   if (err) {
+    //     console.log('err', err);
+    //     reject(err.message);
+    //   } else {
+    //     resolve({ id: this.lastId, message: 'Data updated successfully' });
+    //     update.finalize();
+    //   }
+    // });
   });
 });
 
@@ -147,15 +204,21 @@ ipcMain.handle('update-current-company', async (event, data) => {
   return new Promise((resolve, reject) => {
     const {fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email } = data;
     const update = db.prepare('UPDATE companies SET full_name=?,name=?,address=?,city=?,state_initials=?,zip_code=?,phone_number=?,email=? WHERE id=1');
-    update.run(fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email, function(err) {
-      if (err) {
-        console.log('err', err);
-        reject(err.message);
-      } else {
-        resolve({ id: this.lastId, message: 'Data updated successfully' });
-        update.finalize();
-      }
-    });
+    try {
+      update.run(fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email);
+      resolve({ id: this.lastId, message: 'Data updated successfully' });
+    } catch {
+      reject("Error updating current company");
+    }
+    // update.run(fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email, function(err) {
+    //   if (err) {
+    //     console.log('err', err);
+    //     reject(err.message);
+    //   } else {
+    //     resolve({ id: this.lastId, message: 'Data updated successfully' });
+    //     update.finalize();
+    //   }
+    // });
   });
 });
 
@@ -195,6 +258,7 @@ ipcMain.handle('open-folder', async (event, data) => {
 
     const fileSuccess = await dialog.showMessageBox(BrowserWindow.getFocusedWindow(), options);
     if (fileSuccess.response == 0) {
+      console.log("Focused window:", BrowserWindow.getFocusedWindow());
         try {
           shell.showItemInFolder(`${data}.docx`);
           resolve('successfully opened file');
@@ -259,6 +323,33 @@ ipcMain.handle('show-save-before-exit', async (event) => {
 
 ipcMain.handle('close-window', (event) => {
   mainWindow.close();
+});
+
+ipcMain.handle('delete-company', async (event, data) => {
+  const options = {
+    message: "Are you sure you want to delete this company?",
+    type: "warning",
+    buttons: ["Delete", "Cancel"],
+    title: "Invoice Maker",
+    defaultId: 1,
+    cancelId: 1,
+  }
+
+  const response = await dialog.showMessageBox(BrowserWindow.getFocusedWindow(), options);
+  return new Promise((resolve, reject) => {
+    if (response.response == 0) {
+      const id = data;
+      const remove = db.prepare('DELETE FROM companies WHERE id=?');
+      try {
+        remove.run(id);
+        resolve("Company successfully deleted.");
+      } catch {
+        reject("Error deleting company.");
+      }
+  } else {
+      reject("Undo delete company.")
+  }
+  })
 });
 
 // handles creating a document
@@ -2155,15 +2246,21 @@ ipcMain.handle('create-file', async (event, data) => {
           await docx.Packer.toBuffer(doc).then(buffer => {
             fs.writeFileSync(`${newFilePath}.docx`, buffer);
             const updateFileCreate = db.prepare('UPDATE companies SET invoice_number=?, file_path=? WHERE id=?');
-            updateFileCreate.run(parseInt(invoiceNumber) + 1, newFilePath, id, function(err) {
-            if (err) {
-                console.log('err with file path save', err);
-                reject(err.message);
-              } else {
-                resolve({ id: this.lastId, message: 'File path updated successfully' });
-                updateFileCreate.finalize();
-              }
-            });
+            try {
+              updateFileCreate.run(parseInt(invoiceNumber) + 1, newFilePath, id);
+              // resolve({ id: this.lastId, message: 'File path updated successfully' });
+            } catch {
+              reject("Error with file path save.")
+            }
+            // updateFileCreate.run(parseInt(invoiceNumber) + 1, newFilePath, id, function(err) {
+            // if (err) {
+            //     console.log('err with file path save', err);
+            //     reject(err.message);
+            //   } else {
+            //     resolve({ id: this.lastId, message: 'File path updated successfully' });
+            //     updateFileCreate.finalize();
+            //   }
+            // });
           }).catch(err => {
             console.error('error creating docx', err);
             if (err.code == 'EBUSY') {
