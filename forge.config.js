@@ -7,7 +7,7 @@ module.exports = {
       unpackDir: '{sqlite3}',
     },
     extraResource: [
-      'invoice_companies_seed.db'
+      './resources/invoice_companies_seed.db'
     ],
   },
   rebuildConfig: {

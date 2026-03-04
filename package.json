@@ -3,7 +3,7 @@
   "productName": "Invoice-Maker",
   "description": "My Electron application description",
   "keywords": [],
-  "main": "./main.js",
+  "main": "./src/main.js",
   "version": "1.0.0",
   "author": "102ba",
   "scripts": {
