@@ -1,0 +1,35 @@
+name: macOS Build
+
+on: # when work flow triggers
+    push: # on push
+        branches: [main] # only in main
+    workflow_dispatch: # lets actions happen manually as well
+
+jobs: # jobs, each on its own virtual machine (VM)
+    build-macos: # name of job, can be anything
+        runs-on: macos-latest # tells github to run job on macOS VM
+
+        steps: # ordered steps of job
+          - name: Check repo # name for understanding action
+            uses: actions/checkout@v3 # prebuilt github action that clones repo into VM
+
+          - name: Use Node.js
+            uses: actions/setup-node@v3 # offical node setup action
+            with: # configuration inputs for action
+                node-version: 20 # install and use Node.js version 20
+
+          - name: Install dependencies
+            run: npm install # runs the shell command in the VM
+
+          - name: Build macOS package
+            run: npm run make # makes packaged application in out folder
+
+          - name: Upload macOS application
+            uses: actions/upload-artifact@v3 # lets us save files from VM
+            with:
+                name: macOS-build
+                path: out/make/** # get everything from make folder which includes installers
+
+
+
+

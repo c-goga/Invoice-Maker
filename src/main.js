@@ -5,6 +5,7 @@ try {
 const fs = require("fs");
 const docx = require("docx");
 
+
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const path = require('node:path')
@@ -14,19 +15,24 @@ const {DatabaseSync} = require('node:sqlite');
 
 const isDevelopment = !app.isPackaged; // checks if app is packaged or not
 
+// const logPath = path.join(app.getPath('userData'), 'main.log');
+// function log(...args) {
+//   fs.appendFileSync(logPath, args.join(' ') + '\n');
+// }
+
 // const appPath = app.getPath('userData');
-const dbPath = path.join(__dirname, 'invoice_companies.db');
+const dbPath = isDevelopment ? path.join(__dirname, 'invoice_companies.db') : path.join(app.getPath('userData'), 'invoice_companies.db');
 const seedPath = isDevelopment ? path.join(__dirname, 'invoice_companies_seed.db') // dev
                   : path.join(process.resourcesPath, 'invoice_companies_seed.db');  // not dev
                   // .resourcesPath gives path to the resources folder in the packaged electron app
 // const dbPath = path.join(app.getPath('userData'), 'invoice_companies.db');
-console.log('dbPath:', dbPath);
+// log('dbPath:', dbPath);
+// log('seedPath:', seedPath);
 if (!fs.existsSync(dbPath)) {
   fs.copyFileSync(seedPath, dbPath);
 }
 // const db = new sqlite.Database(dbPath);
 const db = new DatabaseSync(dbPath);
-console.log('db', db);
 
 let mainWindow;
 
@@ -45,7 +51,9 @@ function createWindow () {
   mainWindow.loadFile('index.html')
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  if (isDevelopment) {
+    mainWindow.webContents.openDevTools()
+  }
 }
 
 // This method will be called when Electron has finished
@@ -130,7 +138,6 @@ ipcMain.handle('create-initial-company', (event, data) => {
     const insert = db.prepare('INSERT INTO companies (full_name, name, address, city, state_initials, zip_code, phone_number, email) VALUES (?,?,?,?,?,?,?,?)');
     try {
       insert.run(fullName, companyName, address, city, stateInitials, zipCode, phoneNumber, email);
-
       const get = db.prepare('SELECT * FROM companies WHERE id = 1');
       const company = get.get(); // did this so that it wouldn't immediately say no company found, returning the company ensures it is already in the db
       resolve({ company });

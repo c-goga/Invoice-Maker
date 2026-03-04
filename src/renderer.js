@@ -407,7 +407,7 @@ if (window.location.href.split('/').pop() != 'edit-profile.html') {
         setUpInput(document.getElementById('company-phone-number'), null, "Please input company phone number.")
         setUpInput(document.getElementById('company-email'), null, "Please input company email.");
         intInput();
-        currentCompanyForm.addEventListener('submit', async e => {
+        currentCompanyForm.addEventListener('submit', e => {
             e.preventDefault();
             const fullName = document.getElementById('full-name').value;
             const companyName = document.getElementById('company-name').value;
@@ -420,7 +420,7 @@ if (window.location.href.split('/').pop() != 'edit-profile.html') {
             if (fullName == "" || companyName == "" || address == "" || city == "" || stateInitials == "" || zipCode == "" || phoneNumber == "" || email == "") {
                 console.log('no create company');
             } else {
-                const response = await window.api.createInitialCompany({fullName, companyName, address, city, zipCode, stateInitials, phoneNumber, email});
+                const response = window.api.createInitialCompany({fullName, companyName, address, city, zipCode, stateInitials, phoneNumber, email});
                 console.log('res:', response);
                 window.location.href = 'index.html';
             }

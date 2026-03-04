@@ -28,6 +28,8 @@
   "dependencies": {
     "docx": "^9.5.1",
     "electron-rebuild": "^3.2.9",
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "bootstrap": "^5.3.8"
   }
+
 }

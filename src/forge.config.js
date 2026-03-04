@@ -6,6 +6,9 @@ module.exports = {
     asar: {
       unpackDir: '{sqlite3}',
     },
+    extraResource: [
+      'invoice_companies_seed.db'
+    ],
   },
   rebuildConfig: {
     onlyModules: ['sqlite3'],
