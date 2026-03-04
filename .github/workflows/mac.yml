@@ -25,7 +25,7 @@ jobs: # jobs, each on its own virtual machine (VM)
             run: npm run make # makes packaged application in out folder
 
           - name: Upload macOS application
-            uses: actions/upload-artifact@v3 # lets us save files from VM
+            uses: actions/upload-artifact@v4 # lets us save files from VM
             with:
                 name: macOS-build
                 path: out/make/** # get everything from make folder which includes installers
